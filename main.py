@@ -82,7 +82,7 @@ def get_pic_template(call):
     file_doc = telebot.types.InlineKeyboardButton("Файл", callback_data="file_doc")
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='menu')
     markup.add(file_doc, back_button)
-    bot.send_photo(message.chat.id, open("data/pics/matpomosh.png", 'rb'))
+    bot.send_photo(message.chat.id, open("data/pics/matpomosh.png", 'rb'), reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'file_doc')
@@ -92,7 +92,7 @@ def get_file_template(call):
     pic_doc = telebot.types.InlineKeyboardButton("Изображение", callback_data="pic_doc")
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='menu')
     markup.add(pic_doc, back_button)
-    bot.send_document(message.chat.id, open("data/docs/matpomosh.docx", 'rb'))
+    bot.send_document(message.chat.id, open("data/docs/matpomosh.docx", 'rb'), reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'get_extraction')
