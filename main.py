@@ -1,10 +1,9 @@
-import asyncio
 import datetime as dt
 import logging
 import sqlite3
 
 import telebot
-from telebot.async_telebot import AsyncTeleBot
+
 
 con = sqlite3.connect("data/data.sqlite", check_same_thread=False)
 cur = con.cursor()
@@ -13,7 +12,7 @@ roles_data = {f'{x[1]}': x[0] for x in cur.execute("""SELECT number, name FROM r
 logger = telebot.logger  # logging all actions
 telebot.logger.setLevel(logging.DEBUG)  # outputs debug messages to console.
 
-bot = AsyncTeleBot('7288916895:AAEi8SpPF_XlNXwQRWeabaPo_MjLpnaKB9A')  # https://t.me/MatAidTUSURbot
+bot = telebot.TeleBot('7288916895:AAEi8SpPF_XlNXwQRWeabaPo_MjLpnaKB9A')  # https://t.me/MatAidTUSURbot
 
 splitter = "@%$"
 passwd = '*&TUSURuniversityMatAidBotEmpoyee@!**'
@@ -23,7 +22,7 @@ statuses = {1: '⚠️', 2: '✅'}
 
 
 @bot.message_handler(commands=['start'])  # регистрация / вход (если пользователь записан)
-async def start(message):
+def start(message):
     role = cur.execute("""SELECT role FROM profiles WHERE id=(?)""", (message.chat.id,)).fetchone()
     if role:  # user has role
         markup = telebot.types.InlineKeyboardMarkup()
@@ -31,7 +30,7 @@ async def start(message):
         markup.add(back_button)
         send = f"Здравствуйте, <b>{message.from_user.first_name} {message.from_user.last_name}</b>"
 
-        await bot.send_message(message.chat.id, send, parse_mode='html', reply_markup=markup)
+        bot.send_message(message.chat.id, send, parse_mode='html', reply_markup=markup)
     else:  # user is new
         markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1, one_time_keyboard=True)
         student_button = telebot.types.KeyboardButton("Я - Студент")
@@ -40,11 +39,11 @@ async def start(message):
         send = (f"Добро пожаловать, <b>{message.from_user.first_name} {message.from_user.last_name}</b>!\n"
                 f"Выберите свою роль, чтобы мы могли предложить вам соответствующий функционал.")
 
-        await bot.send_message(message.chat.id, send, parse_mode='html', reply_markup=markup)
+        bot.send_message(message.chat.id, send, parse_mode='html', reply_markup=markup)
 
 
 @bot.message_handler(func=lambda message: message.text == 'Я - Студент')  # выбрана роль студент
-async def clicked_role_student(message):
+def clicked_role_student(message):
     if not cur.execute("""SELECT role FROM profiles WHERE id=?""", (message.chat.id,)).fetchone():
         cur.execute("""INSERT INTO profiles (id, role) VALUES(?, ?)""", (message.chat.id, roles_data['student']))
         con.commit()
@@ -52,18 +51,18 @@ async def clicked_role_student(message):
     back_button = telebot.types.InlineKeyboardButton("Меню", callback_data='student_menu')
     markup.add(back_button)
 
-    await bot.send_message(message.chat.id, "Ваш профиль создан.", parse_mode='html', reply_markup=markup)
+    bot.send_message(message.chat.id, "Ваш профиль создан.", parse_mode='html', reply_markup=markup)
 
 
 @bot.message_handler(func=lambda message: message.text == 'Я - Сотрудник')  # выбрана роль сотрудник
-async def clicked_role_employee(message):
-    await bot.send_message(message.chat.id, "Введите ключ, чтобы создать профиль сотрудника или выполнить вход:",
+def clicked_role_employee(message):
+    bot.send_message(message.chat.id, "Введите ключ, чтобы создать профиль сотрудника или выполнить вход:",
                            parse_mode='html')
 
     bot.register_next_step_handler_by_chat_id(message.chat.id, create_employee)
 
 
-async def create_employee(message):
+def create_employee(message):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Меню", callback_data='employee_menu')
     if message.text == passwd:
@@ -72,26 +71,26 @@ async def create_employee(message):
             cur.execute("""INSERT INTO profiles (id, role) VALUES(?, ?)""",
                         (message.chat.id, roles_data['employee']))
             con.commit()
-            await bot.send_message(message.chat.id, "Профиль успешно создан!", parse_mode='html', reply_markup=markup)
+            bot.send_message(message.chat.id, "Профиль успешно создан!", parse_mode='html', reply_markup=markup)
         else:
-            await bot.send_message(message.chat.id, "Ваш профиль уже существует. Вход успешно выполнен.",
+            bot.send_message(message.chat.id, "Ваш профиль уже существует. Вход успешно выполнен.",
                                    parse_mode='html', reply_markup=markup)
     else:
-        await bot.send_message(message.chat.id, "Неверный ключ. Введите /start, чтобы начать заново.",
+        bot.send_message(message.chat.id, "Неверный ключ. Введите /start, чтобы начать заново.",
                                parse_mode='html')
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'clear_prof')  # забыть меня
-async def clear_prof(call):
+def clear_prof(call):
     cur.execute("""DELETE FROM profiles WHERE id=?""", (call.message.chat.id,))
     con.commit()
 
-    await bot.send_message(call.message.chat.id, "Ваш профиль удален.\n"
+    bot.send_message(call.message.chat.id, "Ваш профиль удален.\n"
                                                  "Введите /start, чтобы начать заново.", parse_mode='html')
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'student_menu')  # меню
-async def callstudent_menu_student(call):
+def callstudent_menu_student(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     clear_button = telebot.types.InlineKeyboardButton("Забыть меня", callback_data="clear_prof")
@@ -102,12 +101,12 @@ async def callstudent_menu_student(call):
     help_button = telebot.types.InlineKeyboardButton("Помощь", callback_data="get_help")
     markup.add(info_button, extr_button, template_button, categories_button, help_button, clear_button)
 
-    await bot.send_message(message.chat.id, f"Студент, вам доступны следующие функции:",
+    bot.send_message(message.chat.id, f"Студент, вам доступны следующие функции:",
                            parse_mode='html', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'get_template')  # шаблон заявления
-async def get_template(call):
+def get_template(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     pic_doc = telebot.types.InlineKeyboardButton("Изображение", callback_data="pic_doc")
@@ -115,42 +114,42 @@ async def get_template(call):
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='student_menu')
     markup.add(pic_doc, file_doc, back_button)
 
-    await bot.send_message(message.chat.id, "Вам достаточно изображения шаблона или нужен файл заявления?",
+    bot.send_message(message.chat.id, "Вам достаточно изображения шаблона или нужен файл заявления?",
                            parse_mode='html', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'pic_doc')  # изображение шаблона
-async def get_pic_template(call):
+def get_pic_template(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     file_doc = telebot.types.InlineKeyboardButton("Файл", callback_data="file_doc")
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_template')
     markup.add(file_doc, back_button)
 
-    await bot.send_photo(message.chat.id, open("data/pics/matpomosh.png", 'rb'),
+    bot.send_photo(message.chat.id, open("data/pics/matpomosh.png", 'rb'),
                          caption="Изображение шаблона заявления", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'file_doc')  # файл шаблона
-async def get_file_template(call):
+def get_file_template(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     pic_doc = telebot.types.InlineKeyboardButton("Изображение", callback_data="pic_doc")
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_template')
     markup.add(pic_doc, back_button)
 
-    await bot.send_document(message.chat.id, open("data/docs/matpomosh.docx", 'rb'),
+    bot.send_document(message.chat.id, open("data/docs/matpomosh.docx", 'rb'),
                             caption="Файл шаблона завления", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'get_extraction')  # что такое выписка?
-async def get_extraction(call):
+def get_extraction(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='student_menu')
     markup.add(back_button)
 
-    await bot.send_photo(message.chat.id, open("data/pics/vipiska.png", 'rb'),
+    bot.send_photo(message.chat.id, open("data/pics/vipiska.png", 'rb'),
                          caption="Вот так выглядит выписка платежа из СберБанка. "
                                  "Её необходимо прикреплять к заявлению, "
                                  "если оно подается на возврат средств за какую-либо покупку. "
@@ -158,7 +157,7 @@ async def get_extraction(call):
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'get_cats')  # категории
-async def get_cats(call):
+def get_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     back_button = telebot.types.InlineKeyboardButton("Назад",
@@ -180,7 +179,7 @@ async def get_cats(call):
     markup.add(file_button)
     markup.add(back_button)
 
-    await bot.send_message(message.chat.id, "Ниже вы можете выбрать конкретную логическую группу категорий "
+    bot.send_message(message.chat.id, "Ниже вы можете выбрать конкретную логическую группу категорий "
                                             "или посмотреть сразу все. Напоминаем, что <u> полный список категорий "
                                             f"и условий также представлен в тексте полного "
                                             f"положения о матпомощи.</u>\n\n"
@@ -190,7 +189,7 @@ async def get_cats(call):
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'all_cats')  # категории
-async def all_cats(call):
+def all_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
@@ -199,64 +198,64 @@ async def all_cats(call):
     text_msg = [x for x in cats[1].split('*')]
     for i in range(3):
         if i == 2:
-            await bot.send_message(message.chat.id, text_msg[i], parse_mode='html', reply_markup=markup)
+            bot.send_message(message.chat.id, text_msg[i], parse_mode='html', reply_markup=markup)
         else:
-            await bot.send_message(message.chat.id, text_msg[i], parse_mode='html')
+            bot.send_message(message.chat.id, text_msg[i], parse_mode='html')
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'family_cats')  # категории
-async def family_cats(call):
+def family_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
     markup.add(back_button)
 
-    await bot.send_message(message.chat.id, cats[2], parse_mode='html', reply_markup=markup)
+    bot.send_message(message.chat.id, cats[2], parse_mode='html', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'life_cats')  # категории
-async def life_cats(call):
+def life_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
     markup.add(back_button)
 
-    await bot.send_message(message.chat.id, cats[3], parse_mode='html', reply_markup=markup)
+    bot.send_message(message.chat.id, cats[3], parse_mode='html', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'social_cats')  # категории
-async def social_cats(call):
+def social_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
     markup.add(back_button)
 
-    await bot.send_message(message.chat.id, cats[4], parse_mode='html', reply_markup=markup)
+    bot.send_message(message.chat.id, cats[4], parse_mode='html', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'pay_cats')  # категории
-async def pay_cats(call):
+def pay_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
     markup.add(back_button)
 
-    await bot.send_message(message.chat.id, cats[5], parse_mode='html', reply_markup=markup)
+    bot.send_message(message.chat.id, cats[5], parse_mode='html', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'conditions')  # условия
-async def conditions(call):
+def conditions(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
     markup.add(back_button)
 
-    await bot.send_photo(message.chat.id, open('data/pics/kvartal.jpg', 'rb'))
-    await bot.send_message(message.chat.id, cats[6], parse_mode='html', reply_markup=markup)
+    bot.send_photo(message.chat.id, open('data/pics/kvartal.jpg', 'rb'))
+    bot.send_message(message.chat.id, cats[6], parse_mode='html', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'get_info')  # что нужно для заявления
-async def get_info(call):
+def get_info(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='student_menu')
@@ -264,7 +263,7 @@ async def get_info(call):
     file_button = telebot.types.InlineKeyboardButton("Полное положение о матпомощи", callback_data='get_mat')
     markup.add(file_button, cats_button, student_menu_button)
 
-    await bot.send_message(message.chat.id, "Обучающиеся ТУСУРа имеют право на получение материальной поддержки.\n"
+    bot.send_message(message.chat.id, "Обучающиеся ТУСУРа имеют право на получение материальной поддержки.\n"
                                             "❗<i>Из фонда деканата могут получать "
                                             "материальную помощь только бюджетники "
                                             "очной формы обучения.\n"
@@ -298,13 +297,13 @@ async def get_info(call):
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'get_mat')  # файл положения
-async def get_mat(call):
+def get_mat(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='student_menu')
     markup.add(student_menu_button)
 
-    await bot.send_document(message.chat.id, open('data/docs/polozenie.pdf', 'rb'),
+    bot.send_document(message.chat.id, open('data/docs/polozenie.pdf', 'rb'),
                             caption="Положение о порядке оказания материальной поддержки "
                                     "нуждающимся студентам и аспирантам "
                                     "ТУСУРа, обучающимся по очной форме обучения "
@@ -313,7 +312,7 @@ async def get_mat(call):
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'get_help')
-async def get_help(call):
+def get_help(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     ask_button = telebot.types.InlineKeyboardButton("❓ Задать вопрос", callback_data='send_question')
@@ -323,7 +322,7 @@ async def get_help(call):
     markup.add(ask_button, memory_button, clean_button)
     markup.add(student_menu_button)
 
-    await bot.send_message(message.chat.id, "Выберите, какое действие вы хотите совершить:\n"
+    bot.send_message(message.chat.id, "Выберите, какое действие вы хотите совершить:\n"
                                             "<i>Задать вопрос</i> - отправить вопрос сотруднику. "
                                             "Незакрытые вопросы объединяются в одну цепочку, "
                                             "поэтому не забывайте отмечать решенные вопросы в "
@@ -335,11 +334,11 @@ async def get_help(call):
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'send_question')
-async def send_question(call):
+def send_question(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     student_menu_button = telebot.types.InlineKeyboardButton("Меню", callback_data='student_menu')
-    await bot.send_message(message.chat.id, "Напишите в одном сообщении суть вопроса. "
+    bot.send_message(message.chat.id, "Напишите в одном сообщении суть вопроса. "
                                             "Если необходимо прикрепить какие-либо файлы, "
                                             "то сохраните их в облаке и оставьте в вопросе ссылку.",
                            reply_markup=markup)
@@ -348,7 +347,7 @@ async def send_question(call):
     bot.register_next_step_handler_by_chat_id(message.chat.id, save_question)
 
 
-async def save_question(message):
+def save_question(message):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_help')
     markup.add(student_menu_button)
@@ -359,19 +358,19 @@ async def save_question(message):
         cur.execute("""INSERT INTO messages (from_user, user_id, date, status) VALUES(?, ?, ?, ?)""",
                     (text, id_user, date, 1))
 
-        await bot.send_message(message.chat.id, "Сообщение отправлено сотруднику. Ожидайте ответа.",
+        bot.send_message(message.chat.id, "Сообщение отправлено сотруднику. Ожидайте ответа.",
                                reply_markup=markup)
     else:  # update old question
         cur.execute("""UPDATE messages SET from_user=(?) WHERE user_id=(?) AND status=(?)""",
                     (talkid_open[1] + "\n<i>UPD: </i>" + text, id_user, 1))
 
-        await bot.send_message(message.chat.id, "Ваш открытый вопрос дополнен. Ожидайте ответа.",
+        bot.send_message(message.chat.id, "Ваш открытый вопрос дополнен. Ожидайте ответа.",
                                reply_markup=markup, parse_mode='html')
     con.commit()
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'memory')
-async def memory(call):
+def memory(call):
     message = call.message
     all_msgs = cur.execute("SELECT date, status FROM messages WHERE user_id=(?)",
                            (message.chat.id,)).fetchall()
@@ -384,13 +383,13 @@ async def memory(call):
     markup.add(*btns_closed)
     markup.add(student_menu_button)
 
-    await bot.send_message(message.chat.id, "⚠️ - Вопрос открыт\n"
+    bot.send_message(message.chat.id, "⚠️ - Вопрос открыт\n"
                                             "✅ - Вопрос закрыт\n\n"
                                             "Выберите время отправки вопроса:", reply_markup=markup, parse_mode='html')
 
 
 @bot.callback_query_handler(func=lambda call: 'get_msg_' in call.data)
-async def get_msg(call):
+def get_msg(call):
     message = call.message
     total_msg = cur.execute(
         """SELECT from_user, to_user, status, talk_id FROM messages WHERE user_id=(?) AND date=(?)""",
@@ -410,11 +409,11 @@ async def get_msg(call):
     close_button = telebot.types.InlineKeyboardButton("Вопрос решен", callback_data=f'close_msg_{total_msg[3]}')
     markup.add(close_button, student_menu_button) if total_msg[2] == 1 else markup.add(student_menu_button)
 
-    await bot.send_message(message.chat.id, msg_text, reply_markup=markup, parse_mode='html')
+    bot.send_message(message.chat.id, msg_text, reply_markup=markup, parse_mode='html')
 
 
 @bot.callback_query_handler(func=lambda call: 'close_msg_' in call.data)
-async def close_question(call):
+def close_question(call):
     message = call.message
 
     cur.execute("""UPDATE messages SET status=(?) WHERE talk_id=(?)""", (2, call.data.split('_')[-1]))
@@ -424,11 +423,11 @@ async def close_question(call):
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='memory')
     markup.add(student_menu_button)
 
-    await bot.send_message(message.chat.id, "Вопрос успешно закрыт!", reply_markup=markup)
+    bot.send_message(message.chat.id, "Вопрос успешно закрыт!", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'clean_memory')
-async def clean_memory(call):
+def clean_memory(call):
     message = call.message
 
     cur.execute("""DELETE FROM messages WHERE user_id=(?)""", (message.chat.id,))
@@ -438,11 +437,11 @@ async def clean_memory(call):
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_help')
     markup.add(student_menu_button)
 
-    await bot.send_message(message.chat.id, "Архив успешно очищен!", reply_markup=markup)
+    bot.send_message(message.chat.id, "Архив успешно очищен!", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'employee_menu')
-async def employee_menu(call):
+def employee_menu(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     clear_button = telebot.types.InlineKeyboardButton("Забыть меня", callback_data="clear_prof")
@@ -451,8 +450,8 @@ async def employee_menu(call):
     students_menu = telebot.types.InlineKeyboardButton("Меню для студентов", callback_data="student_menu")
     markup.add(global_button, students_menu, helpst_button, clear_button)
 
-    await bot.send_message(message.chat.id, f"Сотрудник, вам доступны следующие функции:",
+    bot.send_message(message.chat.id, f"Сотрудник, вам доступны следующие функции:",
                            parse_mode='html', reply_markup=markup)
 
 
-asyncio.run(bot.infinity_polling(skip_pending=True))
+bot.infinity_polling(skip_pending=True)
