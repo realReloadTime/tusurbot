@@ -370,37 +370,41 @@ def save_question(message):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_help')
     markup.add(student_menu_button)
-    id_user, text, date = message.chat.id, message.text, dt.datetime.now().strftime("%d-%m-%Y %H:%M:%S%z")
-    talkid_open = cur.execute("""SELECT talk_id, from_user, to_user FROM messages WHERE status=(?) AND user_id=(?)""",
-                              (1, id_user)).fetchone()
+    id_user, text, date_now = message.chat.id, message.text, dt.datetime.now().strftime("%d-%m-%Y %H:%M:%S%z")
+    talkid_open = cur.execute(
+        """SELECT talk_id, from_user, to_user, date FROM messages WHERE status=(?) AND user_id=(?)""",
+        (1, id_user)).fetchone()
     employee_notify = cur.execute("""SELECT id FROM profiles WHERE role=(2)""").fetchall()
-    print(employee_notify)
-    if not talkid_open or not talkid_open[1].split(splitter)[-1]:  # new question
+    if not talkid_open:  # empty new question
         cur.execute("""INSERT INTO messages (from_user, user_id, date, status) VALUES(?, ?, ?, ?)""",
-                    (text, id_user, date, 1))
+                    (text, id_user, date_now, 1))
         for employee in employee_notify:
             bot.send_message(employee[0], "Студент отправил вам новый вопрос.")
         bot.send_message(message.chat.id, "Сообщение отправлено сотруднику. Ожидайте ответа.",
                          reply_markup=markup)
-    else:  # update old question
-        real_date = cur.execute("""SELECT date FROM messages WHERE user_id=(?) and status=1""",
-                                (id_user,)).fetchone()[
-            0]
-        print(real_date, talkid_open[1], '\n---\n', talkid_open[2])
-        if talkid_open[2] and talkid_open[2].count(splitter) >= talkid_open[1].count(splitter):  # сотрудник ответил
-            cur.execute("""UPDATE messages SET from_user=(?) WHERE user_id=(?) AND status=(?)""",
-                        (talkid_open[1] + splitter * (
-                                talkid_open[2].count(splitter) - talkid_open[1].count(splitter)) + text, id_user,
-                         1))
-        elif not talkid_open[2] or not talkid_open[2].split(splitter)[-1]:  # сотрудник не ответил
-            cur.execute("""UPDATE messages SET from_user=(?) WHERE user_id=(?) AND status=(?)""",
-                        (talkid_open[1] + "\n<i>UPD: </i>" + text, id_user, 1))
+    elif talkid_open[1].count(splitter) > 0 and talkid_open[1][::-1].index(splitter[::-1]) == 0:  # EMPLOYEE ANSWERED do new question path
+        old_text = cur.execute("""SELECT from_user FROM messages WHERE user_id=(?) AND date=(?)""",
+                               (id_user, talkid_open[3])).fetchone()[0]
+        cur.execute("""UPDATE messages SET from_user=(?), to_user=(?) WHERE user_id=(?) AND date=(?)""",
+                    (old_text + text, talkid_open[2] + splitter, id_user, talkid_open[3]))
         emp_markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         button_to_quest = telebot.types.InlineKeyboardButton("К вопросу",
-                                                             callback_data=f'getqsts_opened_{id_user}_{real_date}')
+                                                             callback_data=f'getqsts_opened_{id_user}_{talkid_open[3]}')
         emp_markup.add(button_to_quest)
         for employee in employee_notify:
-            bot.send_message(employee[0], f"Открытый вопрос <b>{real_date}</b> был дополнен студентом.",
+            bot.send_message(employee[0], f"Студент отправил вам новый вопрос в уже открытом {talkid_open[3]}",
+                             reply_markup=emp_markup)
+        bot.send_message(message.chat.id, "Сообщение отправлено сотруднику. Ожидайте ответа.",
+                         reply_markup=markup)
+    else:  # update text line from student WHEN EMPLOYEE DIDNT ANSWER
+        cur.execute("""UPDATE messages SET from_user=(?) WHERE user_id=(?) AND date=(?)""",
+                    (talkid_open[1] + "\n<i>UPD: </i>" + text, id_user, talkid_open[3]))
+        emp_markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+        button_to_quest = telebot.types.InlineKeyboardButton("К вопросу",
+                                                             callback_data=f'getqsts_opened_{id_user}_{talkid_open[3]}')
+        emp_markup.add(button_to_quest)
+        for employee in employee_notify:
+            bot.send_message(employee[0], f"Открытый вопрос <b>{talkid_open[3]}</b> был дополнен студентом.",
                              parse_mode='html', reply_markup=emp_markup)
 
         bot.send_message(message.chat.id, "Ваш открытый вопрос дополнен. Ожидайте ответа.",
@@ -656,7 +660,7 @@ def save_answer(message, chtid):
     user_from, user_to, user_id, date = cur.execute("""SELECT from_user, to_user, user_id,
      date FROM messages WHERE talk_id=(?)""", (talk_id,)).fetchone()
     new_from = user_from + splitter
-    new_to = user_to + message.text + splitter if user_to else message.text + splitter
+    new_to = user_to + message.text if user_to else message.text
 
     cur.execute("""UPDATE messages SET from_user=(?), to_user=(?) WHERE talk_id=(?)""",
                 (new_from, new_to, talk_id))
