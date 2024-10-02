@@ -646,7 +646,7 @@ def send_global_msg(message):  # функция отправки глобаль�
 def questions_menu(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-    button_texts = ['⚠️ Открытые', '✅ Закрытые', 'Все']
+    button_texts = ['⚠️ Открытые', '✅ Закрытые', '🗿 Все']
 
     for i, text in enumerate(button_texts):
         button_texts[i] = telebot.types.InlineKeyboardButton(text, callback_data=f"get_questions {i + 1}")
@@ -685,8 +685,6 @@ def get_questions(call):
         ]
     markup.add(*buttons)
     employee_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='help_student')
-    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
-    markup.add(menu_button)
     markup.add(employee_menu_button)
 
     bot.send_message(message.chat.id, f"Выберите интересующий вопрос:",
@@ -726,8 +724,7 @@ def get_current_question(call):
                                                            callback_data=f"delete_closed_{date}")
         markup.add(delete_action)
     employee_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='help_student')
-    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
-    markup.add(menu_button, employee_menu_button)
+    markup.add(employee_menu_button)
 
     # умный сплит если весь вопрос слишком большой для отображения в одном сообщении
     for msg in telebot.util.smart_split(msg_text, 3000):
