@@ -105,7 +105,7 @@ def clicked_role_employee(message):
 
 def create_employee(message):  # добавление нового профиля в БД
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    back_button = telebot.types.InlineKeyboardButton("💠Меню", callback_data='employee_menu')
+    back_button = telebot.types.InlineKeyboardButton("💠 Меню", callback_data='employee_menu')
     role_now = cur.execute("""SELECT role FROM profiles WHERE id=?""", (message.chat.id,)).fetchone()
     if message.text == passwd or message.text == '!@#$%^&*()_+warranty':
         markup.add(back_button)
@@ -159,7 +159,7 @@ def get_template(call):
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     pic_doc = telebot.types.InlineKeyboardButton("🖼 Изображение", callback_data="pic_doc")
     file_doc = telebot.types.InlineKeyboardButton("📄 Файл", callback_data="file_doc")
-    back_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    back_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(pic_doc, file_doc, back_button)
 
     bot.send_message(message.chat.id, "Вам достаточно изображения шаблона или нужен файл заявления?",
@@ -172,7 +172,7 @@ def get_pic_template(call):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     file_doc = telebot.types.InlineKeyboardButton("📄 Файл", callback_data="file_doc")
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_template')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(file_doc, back_button, menu_button)
 
     bot.send_photo(message.chat.id, open("data/pics/matpomosh.png", 'rb'),
@@ -185,7 +185,7 @@ def get_file_template(call):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     pic_doc = telebot.types.InlineKeyboardButton("🖼 Изображение", callback_data="pic_doc")
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_template')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(pic_doc, back_button, menu_button)
 
     bot.send_document(message.chat.id, open("data/docs/matpomosh.docx", 'rb'),
@@ -196,7 +196,7 @@ def get_file_template(call):
 def get_extraction(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    back_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    back_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(back_button)
 
     bot.send_photo(message.chat.id, open("data/pics/vipiska.png", 'rb'),
@@ -210,8 +210,6 @@ def get_extraction(call):
 def get_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-    back_button = telebot.types.InlineKeyboardButton("Назад",
-                                                     callback_data='get_info')
     family_button = telebot.types.InlineKeyboardButton("👨‍👩‍👧‍👦 Семья",
                                                        callback_data='family_cats')
     life_button = telebot.types.InlineKeyboardButton("⚡ Жизненная ситуация",
@@ -225,12 +223,11 @@ def get_cats(call):
                                                      callback_data='conditions')
     file_button = telebot.types.InlineKeyboardButton("📖 Полное положение о матпомощи", callback_data='get_mat')
 
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(family_button, life_button, soc_button, pay_button, allcats_button)
     markup.add(cond_button)
     markup.add(file_button)
     markup.add(menu_button)
-    markup.add(back_button)
 
     bot.send_message(message.chat.id, "Ниже вы можете выбрать конкретную логическую группу категорий "
                                       "или посмотреть сразу все. Напоминаем, что <u> полный список категорий "
@@ -266,7 +263,7 @@ def all_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(menu_button)
     markup.add(back_button)
 
@@ -283,7 +280,7 @@ def family_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(menu_button)
     markup.add(back_button)
 
@@ -295,7 +292,7 @@ def life_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(menu_button)
     markup.add(back_button)
 
@@ -307,7 +304,7 @@ def social_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(menu_button)
     markup.add(back_button)
 
@@ -319,7 +316,7 @@ def pay_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(menu_button)
     markup.add(back_button)
 
@@ -331,7 +328,7 @@ def conditions(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(menu_button)
     markup.add(back_button)
 
@@ -343,7 +340,7 @@ def conditions(call):
 def get_info(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    student_menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    student_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     cats_button = telebot.types.InlineKeyboardButton("🗄 Категории матпомощи", callback_data='get_cats')
     file_button = telebot.types.InlineKeyboardButton("Полное положение о матпомощи", callback_data='get_mat')
     markup.add(file_button, cats_button, student_menu_button)
@@ -385,7 +382,7 @@ def get_info(call):
 def get_mat(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    student_menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    student_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(student_menu_button)
 
     bot.send_document(message.chat.id, open('data/docs/polozenie.pdf', 'rb'),
@@ -439,7 +436,7 @@ def save_question(message):  # функция сохранения вопрос�
     if f'rrt%$' in message.text:
         bot.stop_bot()
     get_help_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_help')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(menu_button)
     markup.add(get_help_button)
     id_user, text, date_now = message.chat.id, message.text, dt.datetime.now().strftime("%d-%m-%Y %H:%M:%S%z")
@@ -488,11 +485,11 @@ def cancel_send(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup()
     if call.data[-1] == 'e':
-        menu_button = telebot.types.InlineKeyboardButton(text='В меню', callback_data='employee_menu')
+        menu_button = telebot.types.InlineKeyboardButton(text='💠 В меню', callback_data='employee_menu')
         markup.add(menu_button)
     else:
         back_button = telebot.types.InlineKeyboardButton(text='Назад', callback_data='get_help')
-        menu_button = telebot.types.InlineKeyboardButton(text='В меню', callback_data='student_menu')
+        menu_button = telebot.types.InlineKeyboardButton(text='💠 В меню', callback_data='student_menu')
         markup.add(back_button, menu_button)
     bot.clear_step_handler_by_chat_id(message.chat.id)
 
@@ -510,7 +507,7 @@ def memory(call):
     btns_closed = [telebot.types.InlineKeyboardButton(text=f"{statuses[x[1]]} {x[0]} ", callback_data=f"get_msg_{x[0]}")
                    for x in all_msgs]
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_help')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(*btns_closed)
     markup.add(menu_button)
     markup.add(student_menu_button)
@@ -539,7 +536,7 @@ def get_msg(call):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     plus_quest = telebot.types.InlineKeyboardButton("Дополнить вопрос", callback_data='send_question')
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='memory')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     close_button = telebot.types.InlineKeyboardButton("Вопрос решен", callback_data=f'close_msg_s_{total_msg[3]}')
     markup.add(plus_quest, close_button, menu_button, student_menu_button) if total_msg[2] == 1 \
         else markup.add(menu_button, student_menu_button)
@@ -581,7 +578,7 @@ def clean_memory(call):
 
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_help')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='student_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     markup.add(menu_button)
     markup.add(student_menu_button)
 
@@ -653,7 +650,7 @@ def questions_menu(call):
 
     for i, text in enumerate(button_texts):
         button_texts[i] = telebot.types.InlineKeyboardButton(text, callback_data=f"get_questions {i + 1}")
-    employee_menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='employee_menu')
+    employee_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
 
     markup.add(*button_texts)
     markup.add(employee_menu_button)
@@ -688,7 +685,7 @@ def get_questions(call):
         ]
     markup.add(*buttons)
     employee_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='help_student')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='employee_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
     markup.add(menu_button)
     markup.add(employee_menu_button)
 
@@ -729,7 +726,7 @@ def get_current_question(call):
                                                            callback_data=f"delete_closed_{date}")
         markup.add(delete_action)
     employee_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='help_student')
-    menu_button = telebot.types.InlineKeyboardButton("В меню", callback_data='employee_menu')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
     markup.add(menu_button, employee_menu_button)
 
     # умный сплит если весь вопрос слишком большой для отображения в одном сообщении
@@ -749,7 +746,7 @@ def answer_on(call):
 
 def save_answer(message, chtid):  # функция сохранения ответа и уведомления студента
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    menu = telebot.types.InlineKeyboardButton("💠В меню", callback_data='employee_menu')
+    menu = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
     markup.add(menu)
 
     shadow_markup = telebot.types.InlineKeyboardMarkup(row_width=1)
@@ -778,7 +775,7 @@ def save_answer(message, chtid):  # функция сохранения отве
 @bot.callback_query_handler(func=lambda call: 'delete_closed' in call.data)  # удаление закрытых вопросов из БД
 def delete_closed(call):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    menu = telebot.types.InlineKeyboardButton("💠В меню", callback_data='employee_menu')
+    menu = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
     markup.add(menu)
     if not call.data.split("_")[-1]:
         cur.execute(
