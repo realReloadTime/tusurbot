@@ -765,11 +765,11 @@ def save_answer(message, chtid):  # функция сохранения отве
      date FROM messages WHERE talk_id=(?)""", (talk_id,)).fetchone()
     new_from = user_from + splitter if user_from and user_from[
                                                      len(user_from) - len(splitter):] != splitter else user_from
-    if not user_to:
+    if not user_to:  # сотрудник не отвечал
         new_to = message.text
-    elif user_to[len(user_to) - len(splitter):] == splitter:
+    elif user_to[len(user_to) - len(splitter):] == splitter:  # сотрудник отвечает на уже новый раздел
         new_to = user_to + message.text
-    else:
+    else:  # сотрудник дополнил ответ
         new_to = user_to + '\nUPD: ' + message.text
 
     cur.execute("""UPDATE messages SET from_user=(?), to_user=(?) WHERE talk_id=(?)""",
