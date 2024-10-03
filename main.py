@@ -19,7 +19,6 @@ passwd = '*&TUSUR_university_MatAidBotEmployee@!**'  # пароль для вх�
 cats = [x for x in open('data/text/cats.txt', 'r', encoding='utf-8').read().split(splitter)]  # категории матпомощи
 statuses = {1: '⚠️', 2: '✅'}  # статусы вопросов
 
-
 """/
 Далее - описание функций бота по порядку следования в коде
 start() - начальная функция создает новый профиль с выбранной ролью в БД или отправляет кнопку с соответствующим меню
@@ -445,18 +444,21 @@ def save_question(message):  # функция сохранения вопрос�
         (1, id_user)).fetchone()
     employee_notify = cur.execute("""SELECT id FROM profiles WHERE role=(2)""").fetchall()
     emp_markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    button_to_quest = telebot.types.InlineKeyboardButton("К вопросу",
-                                                         callback_data=f'getqsts_opened_{id_user}_{talkid_open[3]}')
-    emp_markup.add(button_to_quest)
     if not talkid_open:  # empty new question
         cur.execute("""INSERT INTO messages (from_user, user_id, date, status) VALUES(?, ?, ?, ?)""",
                     (text, id_user, date_now, 1))
+        button_to_quest = telebot.types.InlineKeyboardButton("К вопросу",
+                                                             callback_data=f'getqsts_opened_{id_user}_{date_now}')
+        emp_markup.add(button_to_quest)
         for employee in employee_notify:
             bot.send_message(employee[0], "Студент отправил вам новый вопрос.", reply_markup=emp_markup)
         bot.send_message(message.chat.id, "Сообщение отправлено сотруднику. Ожидайте ответа.",
                          reply_markup=markup)
     elif talkid_open[1].count(splitter) > 0 and talkid_open[1][::-1].index(splitter[::-1]) == 0:  # EMPLOYEE ANSWERED
         # do new question path
+        button_to_quest = telebot.types.InlineKeyboardButton("К вопросу",
+                                                             callback_data=f'getqsts_opened_{id_user}_{talkid_open[3]}')
+        emp_markup.add(button_to_quest)
         old_text = cur.execute("""SELECT from_user FROM messages WHERE user_id=(?) AND date=(?)""",
                                (id_user, talkid_open[3])).fetchone()[0]
         cur.execute("""UPDATE messages SET from_user=(?), to_user=(?) WHERE user_id=(?) AND date=(?)""",
@@ -468,6 +470,9 @@ def save_question(message):  # функция сохранения вопрос�
         bot.send_message(message.chat.id, "Сообщение отправлено сотруднику. Ожидайте ответа.",
                          reply_markup=markup)
     else:  # update text line from student WHEN EMPLOYEE DIDNT ANSWER
+        button_to_quest = telebot.types.InlineKeyboardButton("К вопросу",
+                                                             callback_data=f'getqsts_opened_{id_user}_{talkid_open[3]}')
+        emp_markup.add(button_to_quest)
         cur.execute("""UPDATE messages SET from_user=(?) WHERE user_id=(?) AND date=(?)""",
                     (talkid_open[1] + "\n<i>UPD: </i>" + text, id_user, talkid_open[3]))
         for employee in employee_notify:
@@ -557,12 +562,17 @@ def close_question(call):
     con.commit()
 
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    shadow_markup = telebot.types.InlineKeyboardMarkup()
     if role == 's':
         menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='memory')
     else:
         student_user_id = int(
             cur.execute("""SELECT user_id FROM messages WHERE talk_id=(?)""", (talk_id,)).fetchone()[0])
-        bot.send_message(student_user_id, 'Ваш вопрос был закрыт сотрудником.')
+        memory_button = telebot.types.InlineKeyboardButton('⏰ Архив', callback_data='memory')
+        shadow_menu_button = telebot.types.InlineKeyboardButton('Меню', callback_data='student_menu')
+        shadow_markup.add(memory_button, shadow_menu_button)
+        bot.send_message(student_user_id, 'Ваш вопрос был закрыт сотрудником.', reply_markup=shadow_markup)
+
         menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='help_student')
     markup.add(menu_button)
 
@@ -753,8 +763,14 @@ def save_answer(message, chtid):  # функция сохранения отве
     talk_id = int(chtid[0])
     user_from, user_to, user_id, date = cur.execute("""SELECT from_user, to_user, user_id,
      date FROM messages WHERE talk_id=(?)""", (talk_id,)).fetchone()
-    new_from = user_from + splitter
-    new_to = user_to + message.text if user_to else message.text
+    new_from = user_from + splitter if user_from and user_from[
+                                                     len(user_from) - len(splitter):] != splitter else user_from
+    if not user_to:
+        new_to = message.text
+    elif user_to[len(user_to) - len(splitter):] == splitter:
+        new_to = user_to + message.text
+    else:
+        new_to = user_to + '\nUPD: ' + message.text
 
     cur.execute("""UPDATE messages SET from_user=(?), to_user=(?) WHERE talk_id=(?)""",
                 (new_from, new_to, talk_id))
