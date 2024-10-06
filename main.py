@@ -498,7 +498,7 @@ def cancel_send(call):
         markup.add(back_button, menu_button)
     bot.clear_step_handler_by_chat_id(message.chat.id)
 
-    bot.send_message(message.chat.id, "Отправка вопроса успешно отменена.", reply_markup=markup)
+    bot.send_message(message.chat.id, "Отправка успешно отменена.", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'memory')  # архив вопросов студента
@@ -747,7 +747,10 @@ def get_current_question(call):
 @bot.callback_query_handler(func=lambda call: 'answer_on_' in call.data)  # ответ сотрудника на выбранный вопрос
 def answer_on(call):
     message = call.message
-    bot.send_message(message.chat.id, "Отправьте ответ на вопрос в чат")
+    markup = telebot.types.InlineKeyboardMarkup()
+    stop_button = telebot.types.InlineKeyboardButton('Отменить отправку ответа', callback_data='cancel_send_e')
+    markup.add(stop_button)
+    bot.send_message(message.chat.id, "Отправьте ответ на вопрос в чат", reply_markup=markup)
     bot.register_next_step_handler_by_chat_id(message.chat.id, save_answer, [call.data.split('_')[-1]])
 
 
