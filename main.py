@@ -11,7 +11,7 @@ roles_data = {f'{x[1]}': x[0] for x in cur.execute("""SELECT number, name FROM r
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)  # дебаггер в консоли (опционально)
 
-bot = telebot.TeleBot('7288916895:AAEi8SpPF_XlNXwQRWeabaPo_MjLpnaKB9A')  # токен https://t.me/MatAidTUSURbot
+bot = telebot.TeleBot('7762083156:AAEO9AY1T3VBiEqiy2ehAHy0wgwSTBQkvy8')  # токен https://t.me/MatAidTUSURbot
 
 splitter = "@%$"  # делитель текста, используется для модификации отображения текста в чате
 passwd = '*&TUSUR_university_MatAidBotEmployee@!**'  # пароль для входа сотрудника в профиль
@@ -209,21 +209,15 @@ def get_extraction(call):
 def get_cats(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-    family_button = telebot.types.InlineKeyboardButton("👨‍👩‍👧‍👦 Семья",
-                                                       callback_data='family_cats')
-    life_button = telebot.types.InlineKeyboardButton("⚡ Жизненная ситуация",
-                                                     callback_data='life_cats')
-    soc_button = telebot.types.InlineKeyboardButton("🎭 Соц. статус",
-                                                    callback_data='social_cats')
-    pay_button = telebot.types.InlineKeyboardButton("🛒 Покупки",
-                                                    callback_data='pay_cats')
+    groups_buttons = [telebot.types.InlineKeyboardButton(x[0], callback_data=f'text_from_groupS_{x[0]}') for x in cur.execute("""SELECT group_name FROM cat_groups""").fetchall()]
     allcats_button = telebot.types.InlineKeyboardButton("📤 Все категории", callback_data='all_cats')
     cond_button = telebot.types.InlineKeyboardButton("📎 Условия предоставления матпомощи",
                                                      callback_data='conditions')
     file_button = telebot.types.InlineKeyboardButton("📖 Полное положение о матпомощи", callback_data='get_mat')
 
     menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
-    markup.add(family_button, life_button, soc_button, pay_button, allcats_button)
+    markup.add(allcats_button)
+    markup.add(*groups_buttons)
     markup.add(cond_button)
     markup.add(file_button)
     markup.add(menu_button)
@@ -266,7 +260,9 @@ def all_cats(call):
     markup.add(menu_button)
     markup.add(back_button)
 
-    text_msg = telebot.util.smart_split(cats[1], 4000)
+    all_categories = [f'<b>{x[0]}</b>: {x[1]}' for x in sorted(cur.execute("""SELECT * FROM categories""").fetchall(),
+                                                               key=lambda x: int(x[0].split('.')[0]))]
+    text_msg = telebot.util.smart_split('\n\n'.join(all_categories), 4000)
     for i in range(len(text_msg)):
         if i == len(text_msg) - 1:
             bot.send_message(message.chat.id, text_msg[i], parse_mode='html', reply_markup=markup)
@@ -274,52 +270,29 @@ def all_cats(call):
             bot.send_message(message.chat.id, text_msg[i], parse_mode='html')
 
 
-@bot.callback_query_handler(func=lambda call: call.data == 'family_cats')  # семейные категории матпомощи
-def family_cats(call):
+@bot.callback_query_handler(lambda call: 'text_from_groupS_' in call.data)
+def get_text_from_group(call):
     message = call.message
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
     menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
-    markup.add(menu_button)
-    markup.add(back_button)
+    markup.add(menu_button, back_button)
 
-    bot.send_message(message.chat.id, cats[2], parse_mode='html', reply_markup=markup)
-
-
-@bot.callback_query_handler(func=lambda call: call.data == 'life_cats')  # категории жизненной ситуации
-def life_cats(call):
-    message = call.message
-    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
-    markup.add(menu_button)
-    markup.add(back_button)
-
-    bot.send_message(message.chat.id, cats[3], parse_mode='html', reply_markup=markup)
-
-
-@bot.callback_query_handler(func=lambda call: call.data == 'social_cats')  # категории соц категорий
-def social_cats(call):
-    message = call.message
-    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
-    markup.add(menu_button)
-    markup.add(back_button)
-
-    bot.send_message(message.chat.id, cats[4], parse_mode='html', reply_markup=markup)
-
-
-@bot.callback_query_handler(func=lambda call: call.data == 'pay_cats')  # категории покупок
-def pay_cats(call):
-    message = call.message
-    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data='get_cats')
-    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
-    markup.add(menu_button)
-    markup.add(back_button)
-
-    bot.send_message(message.chat.id, cats[5], parse_mode='html', reply_markup=markup)
+    group_name = call.data.split('_')[-1]
+    text_ids = cur.execute("""SELECT text_id FROM cat_groups WHERE group_name=?""", (group_name,)).fetchone()[0]
+    if not text_ids:
+        bot.send_message(message.chat.id, 'Категорий не найдено.', parse_mode='html', reply_markup=markup)
+    else:
+        texts = [f'Категории из группы {group_name}:']
+        for t_id in sorted(text_ids.split(', '), key=lambda x: int(x.split('.')[0])):
+            texts.append(f'<b>{t_id}</b>: '
+                         f'{cur.execute("""SELECT text FROM categories WHERE number=?""", (t_id,)).fetchone()[0]}')
+        text_msg = telebot.util.smart_split('\n\n'.join(texts), 4000)
+        for i in range(len(text_msg)):
+            if i == len(text_msg) - 1:
+                bot.send_message(message.chat.id, text_msg[i], parse_mode='html', reply_markup=markup)
+            else:
+                bot.send_message(message.chat.id, text_msg[i], parse_mode='html')
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'conditions')  # условия получения матпомомщи
@@ -539,7 +512,7 @@ def get_msg(call):
                 if answer_msg[i] else '<b>Ответ сотрудника: </b><i>Сотрудник еще не ответил.</i>'
 
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    plus_quest = telebot.types.InlineKeyboardButton("Дополнить вопрос", callback_data='send_question')
+    plus_quest = telebot.types.InlineKeyboardButton("📨 Дополнить вопрос", callback_data='send_question')
     student_menu_button = telebot.types.InlineKeyboardButton("Назад", callback_data='memory')
     menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='student_menu')
     close_button = telebot.types.InlineKeyboardButton("Вопрос решен", callback_data=f'close_msg_s_{total_msg[3]}')
@@ -603,7 +576,8 @@ def employee_menu(call):
     global_button = telebot.types.InlineKeyboardButton("📢 Отправить глобальное сообщение", callback_data="global_send")
     helpst_button = telebot.types.InlineKeyboardButton("❔ Вопросы студентов", callback_data="help_student")
     students_menu = telebot.types.InlineKeyboardButton("📚 Меню для студентов", callback_data="student_menu")
-    markup.add(global_button, students_menu, helpst_button, clear_button)
+    edit_menu = telebot.types.InlineKeyboardButton("🛠 Управление категориями", callback_data="edit_menu")
+    markup.add(global_button, edit_menu, helpst_button, students_menu, clear_button)
 
     bot.send_message(message.chat.id, f"Сотрудник, вам доступны следующие функции:",
                      parse_mode='html', reply_markup=markup)
@@ -804,6 +778,361 @@ def delete_closed(call):
         AND date=(?)""", (date,))
         con.commit()
         bot.send_message(call.message.chat.id, f"Закрытый вопрос {date} успешно удален.", reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: 'edit_menu' in call.data)
+def edit_cats(call):
+    message = call.message
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    menu = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    text = ('Здесь вы можете редактировать содержание пунктов положения (по номеру) и '
+            'их логические группы (содержание или название). \n\n'
+            'Выберите, что хотите изменить:')
+    to_texts = telebot.types.InlineKeyboardButton('📩 Пункт положения',
+                                                  callback_data='edit_texts')
+    to_groups = telebot.types.InlineKeyboardButton('📦 Логическую группу',
+                                                   callback_data='edit_groups')
+    markup.add(to_texts, to_groups, menu)
+    bot.send_message(message.chat.id, text, reply_markup=markup, parse_mode='html')
+
+
+@bot.callback_query_handler(func=lambda call: 'edit_texts' in call.data)
+def edit_texts(call):
+    message = call.message
+    markup = telebot.types.InlineKeyboardMarkup(row_width=3)
+    cancel_button = telebot.types.InlineKeyboardButton("🔴 Отменить изменение",
+                                                       callback_data='cancel_send_e')
+    add_button = telebot.types.InlineKeyboardButton("➕ Добавить новый пункт", callback_data='addnew_text')
+
+    all_texts = {x[0]: x[1] for x in sorted(cur.execute('''SELECT number, text FROM categories''').fetchall(),
+                                            key=lambda x: int(x[0].split('.')[0]))}
+    total_text = '<b>Текущие категории: </b>\n\n' + ';\n\n'.join(f'<i>{key})</i> {all_texts[key]}'
+                                                                 for key in all_texts.keys())
+    for txt in telebot.util.smart_split(total_text, 4000):
+        bot.send_message(message.chat.id, txt, parse_mode='html')
+    markup.add(*[telebot.types.InlineKeyboardButton(key, callback_data=f'edit_number_{key}')
+                 for key in all_texts.keys()])
+    markup.add(add_button)
+    markup.add(cancel_button)
+    bot.send_message(message.chat.id, 'Выберите далее номер пункта, который хотите изменить:', reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: 'edit_number_' in call.data)
+def edit_current_text(call):
+    message, text_number, db_text = (call.message, call.data.split('_')[-1],
+                                     cur.execute('''SELECT text FROM categories WHERE number=?''',
+                                                 (call.data.split('_')[-1],)).fetchone()[0])
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    delete_button = telebot.types.InlineKeyboardButton(f'🧹 Удалить категорию №{text_number}',
+                                                       callback_data=f'delete_number_{text_number}')
+    cancel_button = telebot.types.InlineKeyboardButton('🔴 Отменить отправку',
+                                                       callback_data='cancel_send_e')
+    markup.add(delete_button, cancel_button)
+    bot.send_message(message.chat.id, f'Старый текст категории (нажмите на синий текст, чтобы cкопировать):\n\n'
+                                      f'<code>{db_text}</code>.\n\n'
+                                      f'Введите новое содержание категории, оно будет перезаписано:',
+                     parse_mode='html',
+                     reply_markup=markup)
+    bot.register_next_step_handler_by_chat_id(message.chat.id, edit_current_number, text_number)
+
+
+def edit_current_number(message, text_number):
+    cur.execute('''UPDATE categories SET text=? WHERE number=?''', (message.text, text_number))
+    con.commit()
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    employee_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    edit_menu_button = telebot.types.InlineKeyboardButton("Продолжить редактирование", callback_data='edit_menu')
+    markup.add(edit_menu_button, employee_menu_button)
+
+    bot.send_message(message.chat.id, f'Теперь категория №{text_number} имеет следующее содержание:\n\n'
+                                      f'<b>{message.text}</b>\n\n'
+                                      f'Не забудьте обновить, если это необходимо, '
+                                      f'принадлежность категории к логической группе в соответствующей вкладке.',
+                     reply_markup=markup, parse_mode='html')
+
+
+@bot.callback_query_handler(func=lambda call: 'delete_number_' in call.data)
+def del_number(call):
+    message, text_number = call.message, call.data.split('_')[-1]
+    cur.execute("""DELETE FROM categories WHERE number=?""", (text_number,))
+    con.commit()
+
+    bot.clear_step_handler_by_chat_id(message.chat.id)
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    employee_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    edit_menu_button = telebot.types.InlineKeyboardButton("Продолжить редактирование", callback_data='edit_menu')
+    markup.add(edit_menu_button, employee_menu_button)
+
+    bot.send_message(message.chat.id, f'Категория №{text_number} была успешно удалена.', reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: 'addnew_text' in call.data)
+def add_new_text(call):
+    message = call.message
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    cancel_button = telebot.types.InlineKeyboardButton('🔴 Отменить отправку',
+                                                       callback_data='cancel_send_e')
+    markup.add(cancel_button)
+    bot.send_message(message.chat.id, f'Отправьте номер категории, которую хотите создать:', reply_markup=markup)
+    bot.register_next_step_handler_by_chat_id(message.chat.id, register_new_cat)
+
+
+def register_new_cat(message):
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    employee_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    cancel_button = telebot.types.InlineKeyboardButton('🔴 Отменить отправку',
+                                                       callback_data='cancel_send_e')
+    if message.text.strip().split('.')[0].isnumeric():
+        markup.add(cancel_button)
+        text_number = message.text.strip()
+        bot.send_message(message.chat.id, f'Продолжаем создание новой категории №{text_number}. '
+                                          f'Введите текст содержания категории:', reply_markup=markup)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, add_new_number_with_text, text_number)
+    else:
+        markup.add(employee_menu_button)
+        bot.send_message(message.chat.id, f'Ваш ответ: "{message.text}" не может быть номером категории. '
+                                          f'Пример номера: "12" или "12.3".\n\nВернитесь в меню и попробуйте заново.',
+                         reply_markup=markup)
+
+
+def add_new_number_with_text(message, text_number):
+    cur.execute('INSERT INTO categories(number, text) VALUES (?, ?)',
+                (text_number, message.text.strip().strip('.')))
+    con.commit()
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    employee_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    edit_menu_button = telebot.types.InlineKeyboardButton("Продолжить редактирование", callback_data='edit_menu')
+    markup.add(edit_menu_button, employee_menu_button)
+
+    bot.send_message(message.chat.id, f'Создана новая категория №{text_number}:\n\n'
+                                      f'<i>{message.text.strip().strip(".")}</i>\n\n'
+                                      f'Вы можете редактировать её в соответствующем разделе.',
+                     reply_markup=markup, parse_mode='html')
+
+
+@bot.callback_query_handler(func=lambda call: call.data == 'edit_groups')
+def edit_groups(call):
+    message = call.message
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    written_groups = {x[0]: x[1] for x in cur.execute('''SELECT group_name, text_id FROM cat_groups''').fetchall()}
+
+    markup.add(*[telebot.types.InlineKeyboardButton(key, callback_data=f'edit_group_{key}')
+                 for key in written_groups.keys()])
+    employee_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    append_group_button = telebot.types.InlineKeyboardButton("➕ Создать новую", callback_data='append_group')
+    markup.add(append_group_button)
+    markup.add(employee_menu_button)
+
+    bot.send_message(message.chat.id, 'Выберите действие, либо группу, которую хотите изменить:',
+                     reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: 'edit_group_' in call.data)
+def edit_current_group(call):
+    message, group_name = call.message, call.data.split('_')[-1]
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+
+    rename_group_button = telebot.types.InlineKeyboardButton("📝 Переименовать",
+                                                             callback_data=f'rename_group_{group_name}')
+    edit_categories_in_group_button = telebot.types.InlineKeyboardButton("ℹ️ Изменить наполнение",
+                                                                         callback_data=f'edit_cats_in_group_'
+                                                                                       f'{group_name}')
+    delete_group_button = telebot.types.InlineKeyboardButton("🗑 Удалить",
+                                                             callback_data=f'delete_group_{group_name}')
+
+    back_button = telebot.types.InlineKeyboardButton("⬅️ Назад", callback_data='edit_groups')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+
+    markup.add(edit_categories_in_group_button, rename_group_button,
+               delete_group_button, back_button, menu_button)
+
+    bot.send_message(message.chat.id, f'<b>{group_name}</b>\n\nВыберите действие с группой:',
+                     reply_markup=markup, parse_mode='html')
+
+
+@bot.callback_query_handler(func=lambda call: 'rename_group_' in call.data)
+def rename_group(call):
+    message = call.message
+    prev_name = call.data.split('_')[-1]
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    cancel_button = telebot.types.InlineKeyboardButton('🔴 Отменить отправку',
+                                                       callback_data='cancel_send_e')
+    markup.add(cancel_button)
+    bot.send_message(message.chat.id, 'Введите новое название группы:', reply_markup=markup)
+
+    bot.register_next_step_handler_by_chat_id(message.chat.id, register_new_name, prev_name)
+
+
+def register_new_name(message, prev_name):
+    cur.execute('UPDATE cat_groups SET group_name=? WHERE group_name=?', (message.text, prev_name))
+    con.commit()
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    back_button = telebot.types.InlineKeyboardButton("⬅️ Назад", callback_data='edit_groups')
+    employee_menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    markup.add(back_button, employee_menu_button)
+    bot.send_message(message.chat.id, f'Название группы {prev_name} было изменено на {message.text}.',
+                     reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: 'delete_group_' in call.data)
+def delete_group(call):
+    group_name, message = call.data.split('_')[-1], call.message
+
+    cur.execute('''DELETE FROM cat_groups WHERE group_name=?''', (group_name,))
+    con.commit()
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    back_button = telebot.types.InlineKeyboardButton("⬅️ Назад", callback_data='edit_groups')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    markup.add(back_button, menu_button)
+
+    bot.send_message(message.chat.id, f'Группа {group_name} была удалена.',
+                     reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data == 'append_group')
+def append_group(call):
+    message = call.message
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    cancel_button = telebot.types.InlineKeyboardButton('🔴 Отменить отправку',
+                                                       callback_data='cancel_send_e')
+    markup.add(cancel_button)
+
+    bot.send_message(message.chat.id, f'Введите название группы, которую хотите создать: ',
+                     reply_markup=markup)
+    bot.register_next_step_handler_by_chat_id(message.chat.id, register_new_group)
+
+
+def register_new_group(message):
+    message.text = message.text.replace('<', '').replace('>', '').replace('_', '')
+    cur.execute("""INSERT INTO cat_groups (group_name) VALUES (?)""", (message.text,))
+    con.commit()
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    add_texts_button = telebot.types.InlineKeyboardButton("Добавить наполнение",
+                                                          callback_data=f'edit_cats_in_group_{message.text}')
+    back_button = telebot.types.InlineKeyboardButton("⬅️ Назад", callback_data='edit_groups')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    markup.add(add_texts_button)
+    markup.add(back_button, menu_button)
+
+    bot.send_message(message.chat.id, f'Группа {message.text} была создана.',
+                     reply_markup=markup)
+
+
+@bot.callback_query_handler(lambda call: 'edit_cats_in_group_' in call.data)
+def edit_cats_in_group(call):
+    message, group_name = call.message, call.data.split('_')[-1]
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    add_points_button = telebot.types.InlineKeyboardButton('➕ Задать новые пункты',
+                                                           callback_data=f'add_points_INSERT_{group_name}')
+    append_points_button = telebot.types.InlineKeyboardButton('📨 Дополнить пункты',
+                                                              callback_data=f'add_points_UPDATE_{group_name}')
+    list_of_categories = telebot.types.InlineKeyboardButton('Получить список всех пунктов',
+                                                            callback_data=f'get_texts_{group_name}')
+    back_button = telebot.types.InlineKeyboardButton("⬅️ Назад", callback_data='edit_groups')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    markup.add(list_of_categories)
+
+    text_ids = cur.execute("""SELECT text_id FROM cat_groups WHERE group_name=?""",
+                           (group_name,)).fetchone()[0]
+    if text_ids:
+        markup.add(add_points_button, append_points_button, back_button, menu_button)
+        text_ids = text_ids.split(', ')
+        send_text = ["<b>Текущее наполнение группы: </b>"]
+        for t_id in text_ids:
+            try:
+                send_text.append(f'<i>{t_id}</i>: ' + cur.execute("""SELECT text FROM categories WHERE number=?""",
+                                                                  (t_id,)).fetchone()[0])
+            except (IndexError or AttributeError):
+                continue
+    else:
+        markup.add(back_button, add_points_button, menu_button)
+        send_text = ['<i>Нет записанных в группу пунктов.</i>']
+    send_text = telebot.util.smart_split('\n\n'.join(send_text), 3000)
+    for i, text in enumerate(send_text):
+        if i == len(send_text) - 1:
+            bot.send_message(message.chat.id, f'{text}\n\n  <b>Выберите действие:</b>',
+                             reply_markup=markup, parse_mode='html')
+        elif i == 0:
+            bot.send_message(message.chat.id, f'Текущее наполнение группы:\n\n{text}',
+                             parse_mode='html')
+        else:
+            bot.send_message(message.chat.id, f'{text}', parse_mode='html')
+
+
+@bot.callback_query_handler(func=lambda call: 'get_texts_' in call.data)
+def get_texts(call):
+    group_name, message = call.data.split('_')[-1], call.message
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    add_points_button = telebot.types.InlineKeyboardButton('➕ Задать новые пункты',
+                                                           callback_data=f'add_points_INSERT_{group_name}')
+    append_points_button = telebot.types.InlineKeyboardButton('📨 Дополнить пункты',
+                                                              callback_data=f'add_points_UPDATE_{group_name}')
+
+    back_button = telebot.types.InlineKeyboardButton("⬅️ Назад", callback_data='edit_groups')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    markup.add(add_points_button, append_points_button, back_button, menu_button)
+
+    texts = [f'{x[0]}: {x[1]}' for x in cur.execute("""SELECT * FROM categories""").fetchall()]
+    total_text = telebot.util.smart_split('\n\n'.join(texts), 3000)
+    for i, text in enumerate(total_text):
+        if i == len(total_text) - 1:
+            bot.send_message(message.chat.id, f'{text}\n\n  <b>Выберите действие:</b>',
+                             reply_markup=markup, parse_mode='html')
+        else:
+            bot.send_message(message.chat.id, f'{text}', parse_mode='html')
+
+
+@bot.callback_query_handler(func=lambda call: 'add_points_' in call.data)
+def add_points(call):
+    message, add_type, group_name = call.message, call.data.split('_')[-2], call.data.split('_')[-1]
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    cancel_button = telebot.types.InlineKeyboardButton('🔴 Отменить отправку',
+                                                       callback_data='cancel_send_e')
+    markup.add(cancel_button)
+
+    bot.send_message(message.chat.id, 'Введите номера пунктов через запятую. Они будут записаны в группу:\n\n'
+                                      '<i>Отправьте 0, чтобы удалить все пункты из группы</i>\n',
+                     reply_markup=markup, parse_mode='html')
+
+    bot.register_next_step_handler_by_chat_id(message.chat.id, register_add_points, group_name, add_type)
+
+
+def register_add_points(message, group_name, add_type):
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    back_button = telebot.types.InlineKeyboardButton("⬅️ Назад", callback_data='edit_groups')
+    menu_button = telebot.types.InlineKeyboardButton("💠 В меню", callback_data='employee_menu')
+    markup.add(back_button, menu_button)
+
+    if message.text != '0':
+        clear_text = ', '.join([t_id.strip() for t_id in message.text.strip(',').strip().split(',')])
+        if add_type == 'INSERT':
+            cur.execute('''UPDATE cat_groups SET text_id=? WHERE group_name=?''', (clear_text, group_name))
+            con.commit()
+        elif add_type == 'UPDATE':
+            prev_ids = cur.execute('''SELECT text_id FROM cat_groups WHERE group_name=?''',
+                                   (group_name,)).fetchone()[0]
+            prev_ids = '' if not prev_ids else prev_ids
+            cur.execute('''UPDATE cat_groups SET text_id=? WHERE group_name=?''',
+                        (prev_ids + ', ' + clear_text, group_name))
+            con.commit()
+        bot.send_message(message.chat.id, f'Теперь ваша группа содержит в себе пункты '
+                                          f'{cur.execute("""SELECT text_id FROM cat_groups WHERE group_name=?""", (group_name,)).fetchone()[0]}.',
+                         reply_markup=markup)
+    else:
+        cur.execute('''UPDATE cat_groups SET text_id=NULL WHERE group_name=?''', (group_name,))
+        con.commit()
+
+        bot.send_message(message.chat.id, 'Пункты были удалены из группы.', reply_markup=markup)
 
 
 bot.infinity_polling(skip_pending=True)  # бесконечная работа бота
