@@ -11,7 +11,7 @@ roles_data = {f'{x[1]}': x[0] for x in cur.execute("""SELECT number, name FROM r
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)  # дебаггер в консоли (опционально)
 
-bot = telebot.TeleBot('7762083156:AAEO9AY1T3VBiEqiy2ehAHy0wgwSTBQkvy8')  # токен https://t.me/MatAidTUSURbot
+bot = telebot.TeleBot('7288916895:AAEi8SpPF_XlNXwQRWeabaPo_MjLpnaKB9A')  # токен https://t.me/MatAidTUSURbot
 
 splitter = "@%$"  # делитель текста, используется для модификации отображения текста в чате
 passwd = '*&TUSUR_university_MatAidBotEmployee@!**'  # пароль для входа сотрудника в профиль
